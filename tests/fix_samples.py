@@ -24,7 +24,7 @@ def verify_fix(msg: bytes) -> bool:
         if not tag9.startswith(b"9="):
             return False
         return len(msg[second + 1 : i + 1]) == int(tag9[2:])
-    except Exception:
+    except ValueError:
         return False
 
 
