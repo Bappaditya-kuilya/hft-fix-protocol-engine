@@ -47,3 +47,28 @@ def heartbeat(session_id: str, seq: int) -> tuple[bool, str]:
     if not validate_session(session_id):
         return False, "unknown session"
     return check_seq(session_id, seq)
+
+
+def gate_session(msg: dict) -> tuple[bool, str, str]:
+    sid = msg.get("SenderCompID", msg.get("49"))
+    raw_seq = msg.get("MsgSeqNum", msg.get("34"))
+    typ = msg.get("MsgType", msg.get("35"))
+    if sid is None or raw_seq is None or typ is None:
+        return False, "missing field", "reject"
+    try:
+        seq = int(raw_seq)  # type: ignore[arg-type]
+    except (ValueError, TypeError):
+        return False, "bad seq", "reject"
+    session_id = str(sid)
+    msg_type = str(typ)
+    if msg_type == "A":
+        ok, m = logon(session_id, seq)
+        return ok, m, "logon" if ok else "reject"
+    if msg_type == "5":
+        ok, m = logout(session_id)
+        return ok, m, "logout" if ok else "reject"
+    if msg_type == "0":
+        ok, m = heartbeat(session_id, seq)
+        return ok, m, "heartbeat" if ok else "reject"
+    ok, m = check_seq(session_id, seq)
+    return ok, m, "seq" if ok else "reject"

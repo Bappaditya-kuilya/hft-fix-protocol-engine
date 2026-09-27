@@ -76,3 +76,32 @@ def test_no_resend_emitted():
     assert not hasattr(session, "resend_request")
     sig = inspect.signature(session.check_seq)
     assert list(sig.parameters) == ["session_id", "seq"]
+
+
+def test_gate_logon_heartbeat_logout():
+    assert session.gate_session(
+        {"SenderCompID": "g1", "MsgSeqNum": 1, "MsgType": "A"}
+    ) == (True, "Logon ACK", "logon")
+    ok, _, action = session.gate_session(
+        {"SenderCompID": "g1", "MsgSeqNum": 2, "MsgType": "0"}
+    )
+    assert (ok, action) == (True, "heartbeat")
+    ok, _, action = session.gate_session(
+        {"SenderCompID": "g1", "MsgSeqNum": 3, "MsgType": "D"}
+    )
+    assert (ok, action) == (True, "seq")
+    assert session.gate_session(
+        {"SenderCompID": "g1", "MsgSeqNum": 0, "MsgType": "5"}
+    ) == (True, "Logout confirm", "logout")
+
+
+def test_gate_rejects_gap_and_unknown():
+    session.logon("g2", 1)
+    ok, _, action = session.gate_session(
+        {"SenderCompID": "g2", "MsgSeqNum": 9, "MsgType": "D"}
+    )
+    assert ok is False and action == "reject"
+    ok, _, action = session.gate_session(
+        {"SenderCompID": "nope", "MsgSeqNum": 2, "MsgType": "D"}
+    )
+    assert ok is False and action == "reject"
