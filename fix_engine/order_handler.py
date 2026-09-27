@@ -1,8 +1,22 @@
 # FIX Protocol — Tag 35=D New Order Single handler
 # Latency SLA: all processing must complete within 20ms (JIRA-802)
 
+from fix_engine.auth import validate_session
 
-def process_new_order_single(tag35d_message: dict) -> dict:
+
+def _session_ok(msg: dict, session_id: str | None) -> dict | None:
+    sid = session_id if session_id is not None else msg.get("SessionID")
+    if sid is None:
+        return None
+    if not validate_session(str(sid)):
+        return {"status": "REJECTED", "reason": "unknown session"}
+    return None
+
+
+def process_new_order_single(tag35d_message: dict, session_id: str | None = None) -> dict:
+    denied = _session_ok(tag35d_message, session_id)
+    if denied is not None:
+        return denied
     cl_ord_id = tag35d_message.get("ClOrdID")
     if cl_ord_id is None or (isinstance(cl_ord_id, str) and not cl_ord_id.strip()):
         return {"status": "REJECTED", "reason": "ClOrdID: missing or empty"}
@@ -36,7 +50,10 @@ def process_new_order_single(tag35d_message: dict) -> dict:
 _accepted: set[str] = set()
 
 
-def process_cancel_request(msg: dict) -> dict:
+def process_cancel_request(msg: dict, session_id: str | None = None) -> dict:
+    denied = _session_ok(msg, session_id)
+    if denied is not None:
+        return denied
     orig = msg.get("OrigClOrdID")
     if orig is None or (isinstance(orig, str) and not orig.strip()):
         return {"status": "REJECTED", "reason": "OrigClOrdID: missing"}
