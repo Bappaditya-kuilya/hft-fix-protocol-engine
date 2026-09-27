@@ -12,7 +12,7 @@ ruff check .
 mypy fix_engine/
 ```
 
-All three pass on Day-2 (29 tests).
+All three pass on Day-3 (48 tests).
 
 ## Structure
 
@@ -21,6 +21,8 @@ fix_engine/order_handler.py  # 35=D dict validation (tags 11/55/54/38/40)
 fix_engine/auth.py           # thread-safe session registry
 fix_engine/framing.py        # TCP buffer: bytes -> frames via BodyLength(9), 64KB cap
 fix_engine/parser.py         # frame -> dict + checksum gate, 35=8 encoder
+fix_engine/session.py        # Logon/Logout/Heartbeat, per-message seq gap->reject
+fix_engine/order_handler.py  # 35=D validation + 35=F cancel, session-checked
 tests/fix_samples.py         # 6 wire reference messages (35=D/F/8/A/5/0)
 tests/test_*.py              # corpus, auth, validation, smoke
 ```
@@ -37,13 +39,16 @@ tests/test_*.py              # corpus, auth, validation, smoke
   coalesced splits, truncated waits, >64KB rejects).
 - `parse_frame` validates BodyLength + checksum, returns flat dict;
   `encode_35_8` builds verifiable Execution Reports.
+- Session gate: Logon(seq 1)→ACK, per-message seq check (gap/replay→reject,
+  no ResendRequest), Logout teardown. Order/cancel handlers reject unknown
+  sessions before business logic; full Logon→D→F→Logout flow tested.
 - 20ms p99 budget covers handler + audit-queue push only (PRD §8 steps 4-5).
   No benchmark numbers yet — bench suite lands Day-6.
 
 ## What's not yet (honest gaps)
 
-- Handler takes a dict, not wire bytes — handler↔parser call wiring lands
-  Day-3 with session + seq checks.
+- Handler takes a dict, not wire bytes — dict→wire orchestration (single
+  `handle_order` hot path, T7) lands Day-5 with the audit queue.
 - `validate_session` exists but the handler does not call it yet (v1 dead-code
   bug) — wiring lands Day-3 with per-message seq gap→reject, no ResendRequest.
 - No audit queue, no SQLite writer, no server socket, no rate limiting.
@@ -58,6 +63,7 @@ only, no UI, not for real money.
 - Day-1: harness, corpus, thread-safe registry, explicit 35=D validation,
   lint gate. 5 commits. `pytest -q`: 13 passed.
 - Day-2: framing + parser + 35=8 encoder + wire round-trip. 6 commits.
+- Day-3: session + seq + cancel + handler wiring + e2e flow. 7 commits.
 - Day-3: _session + seq wiring (pending)_
 - Day-4: _35=F + 35=8 encoder (pending)_
 - Day-5: _audit queue + writer (pending)_

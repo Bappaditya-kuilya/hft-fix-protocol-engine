@@ -2,15 +2,14 @@
 
 ## Session auth
 
-Mandatory, not decorative. Every order-bearing message must pass
-`validate_session` before processing. Status Day-1: registry is thread-safe,
-wiring into the handler lands Day-3. Unwired paths are rejected in review
-until then.
+Mandatory, not decorative. Order/cancel handlers call `validate_session`
+before field validation — unknown sessions get REJECTED without touching
+business logic or `_accepted` state. Proven by `tests/test_session_flow.py`.
 
 ## Sequence numbers
 
-Session Manager checks seq on every message (not just Logon); gap → reject.
-No ResendRequest/PossDup — out of scope by design.
+Session Manager checks seq on every message via `gate_session` (not just Logon); gap → reject.
+No ResendRequest/PossDup — out of scope by design. Landed Day-3.
 
 ## Parser boundary
 
@@ -40,3 +39,4 @@ do not trade real money on this.
 - Day-1: registry lock, field validation, corpus verify. Wiring + queue
   still pending (see gaps above).
 - Day-2: framing + parser boundary landed, audited via round-trip tests.
+- Day-3: session wiring + seq gate landed, proven by e2e flow test.
