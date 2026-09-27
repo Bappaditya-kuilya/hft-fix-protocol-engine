@@ -28,11 +28,22 @@ def logout(session_id: str) -> tuple[bool, str]:
     return True, "Logout confirm"
 
 
-def heartbeat(session_id: str, seq: int) -> tuple[bool, str]:
-    _ = seq
+def check_seq(session_id: str, seq: int) -> tuple[bool, str]:
     if not validate_session(session_id):
         return False, "unknown session"
     with _lock:
-        if session_id not in _expected:
+        exp = _expected.get(session_id)
+        if exp is None:
             return False, "unknown session"
-    return True, "ok"
+        if seq < exp:
+            return False, "duplicate/replay"
+        if seq > exp:
+            return False, "gap"
+        _expected[session_id] = exp + 1
+        return True, "ok"
+
+
+def heartbeat(session_id: str, seq: int) -> tuple[bool, str]:
+    if not validate_session(session_id):
+        return False, "unknown session"
+    return check_seq(session_id, seq)

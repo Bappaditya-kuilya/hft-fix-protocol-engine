@@ -35,3 +35,44 @@ def test_heartbeat_keeps_membership():
     ok, _ = session.heartbeat("s1", 2)
     assert ok is True
     assert auth.validate_session("s1") is True
+
+
+def test_exact_advances():
+    session.logon("s1", 1)
+    assert session.check_seq("s1", 2) == (True, "ok")
+    assert session.check_seq("s1", 3) == (True, "ok")
+    with session._lock:
+        assert session._expected["s1"] == 4
+
+
+def test_gap_rejects_without_advancing():
+    session.logon("s1", 1)
+    ok, msg = session.check_seq("s1", 5)
+    assert ok is False
+    assert "gap" in msg
+    with session._lock:
+        assert session._expected["s1"] == 2
+    assert session.check_seq("s1", 2) == (True, "ok")
+
+
+def test_replay_rejects_without_advancing():
+    session.logon("s1", 1)
+    assert session.check_seq("s1", 2) == (True, "ok")
+    ok, msg = session.check_seq("s1", 2)
+    assert ok is False
+    assert "replay" in msg or "duplicate" in msg
+    with session._lock:
+        assert session._expected["s1"] == 3
+
+
+def test_no_resend_emitted():
+    import inspect
+    import pathlib
+
+    src = pathlib.Path(session.__file__).read_text()
+    assert "esend" not in src.lower()
+    assert "PossDup" not in src
+    assert not hasattr(session, "send_resend_request")
+    assert not hasattr(session, "resend_request")
+    sig = inspect.signature(session.check_seq)
+    assert list(sig.parameters) == ["session_id", "seq"]
