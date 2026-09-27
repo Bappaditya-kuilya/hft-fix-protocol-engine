@@ -17,7 +17,7 @@ No ResendRequest/PossDup — out of scope by design.
 Malformed input (bad checksum, wrong BodyLength, missing tags) is rejected
 before business logic; the handler never raises. Wire-message fixtures live
 in `tests/fix_samples.py`; framing edge tests (split/coalesced/truncated/
-oversized >64KB) land with the Day-2 parser.
+oversized >64KB) landed Day-2 in `tests/test_framing.py`.
 
 ## Secrets
 
@@ -39,4 +39,4 @@ do not trade real money on this.
 
 - Day-1: registry lock, field validation, corpus verify. Wiring + queue
   still pending (see gaps above).
-- Day-2..7: update this file as framing, seq, queue, bench land.
+- Day-2: framing + parser boundary landed, audited via round-trip tests.
