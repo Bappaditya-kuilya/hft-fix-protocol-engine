@@ -29,4 +29,21 @@ def process_new_order_single(tag35d_message: dict) -> dict:
     if ord_type is None or (isinstance(ord_type, str) and not ord_type.strip()):
         return {"status": "REJECTED", "reason": "OrdType: missing or empty"}
 
+    _accepted.add(cl_ord_id)
     return {"status": "ACCEPTED", "order_id": cl_ord_id, "symbol": symbol}
+
+
+_accepted: set[str] = set()
+
+
+def process_cancel_request(msg: dict) -> dict:
+    orig = msg.get("OrigClOrdID")
+    if orig is None or (isinstance(orig, str) and not orig.strip()):
+        return {"status": "REJECTED", "reason": "OrigClOrdID: missing"}
+    cl_ord_id = msg.get("ClOrdID")
+    if cl_ord_id is None or (isinstance(cl_ord_id, str) and not cl_ord_id.strip()):
+        return {"status": "REJECTED", "reason": "ClOrdID: missing or empty"}
+    if orig not in _accepted:
+        return {"status": "REJECTED", "reason": "unknown OrigClOrdID"}
+    _accepted.discard(orig)
+    return {"status": "CANCELLED", "order_id": orig}
