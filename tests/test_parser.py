@@ -1,6 +1,6 @@
 import pytest
 
-from fix_engine.parser import parse_frame
+from fix_engine.parser import encode_35_8, parse_frame
 from tests.fix_samples import CORPUS, verify_fix
 
 
@@ -35,3 +35,36 @@ def test_length_mismatch_rejects():
     assert verify_fix(bad) is False
     with pytest.raises(ValueError, match="BodyLength"):
         parse_frame(bad)
+
+
+def _exec_fields(exec_type: str) -> dict[str, str]:
+    return {
+        "49": "EXCHANGE",
+        "56": "CLIENT1",
+        "34": "200",
+        "52": "20260922-12:00:00.500",
+        "11": "ORD1001",
+        "37": "EX12345",
+        "17": "EXEC1",
+        "20": "0",
+        "39": exec_type,
+        "150": exec_type,
+        "55": "AAPL",
+        "54": "1",
+        "38": "100",
+    }
+
+
+@pytest.mark.parametrize("exec_type", ["0", "8", "4"])
+def test_encode_35_8_roundtrip(exec_type: str):
+    raw = encode_35_8(_exec_fields(exec_type))
+    assert verify_fix(raw) is True
+    d = parse_frame(raw)
+    assert d["35"] == "8" and d["150"] == exec_type
+
+
+def test_encode_35_8_missing_exectype_raises():
+    fields = _exec_fields("0")
+    del fields["150"]
+    with pytest.raises(ValueError, match="150"):
+        encode_35_8(fields)

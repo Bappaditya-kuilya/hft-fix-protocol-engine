@@ -40,3 +40,17 @@ def parse_frame(frame: bytes) -> dict[str, str]:
     if out.get("8") != "FIX.4.2":
         raise ValueError("bad BeginString, want 8=FIX.4.2")
     return out
+
+
+def encode_35_8(body_fields: dict[str, str] | list[tuple[str, str]]) -> bytes:
+    """Build a 35=8 execution report with auto BodyLength + checksum."""
+    items = list(body_fields.items()) if isinstance(body_fields, dict) else list(body_fields)
+    tags = {t for t, _ in items}
+    if "150" not in tags:
+        raise ValueError("missing ExecType 150")
+    if tags & {"8", "9", "10", "35"}:
+        raise ValueError("reserved tag in body_fields: 8/9/10/35")
+    body = "35=8\x01" + "".join(f"{t}={v}\x01" for t, v in items)
+    body_b = body.encode("ascii")
+    pre = f"8=FIX.4.2\x019={len(body_b)}\x01".encode("ascii") + body_b
+    return pre + f"10={sum(pre) % 256:03d}\x01".encode("ascii")
