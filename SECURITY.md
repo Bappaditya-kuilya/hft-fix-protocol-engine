@@ -42,3 +42,4 @@ do not trade real money on this.
 - Day-2: framing + parser boundary landed, audited via round-trip tests.
 - Day-3: session wiring + seq gate landed, proven by e2e flow test.
 - Day-4: audit queue + hot-path wiring landed; rejects push nothing.
+- Day-5: CI runs tests + bench + lint on every push, fails over budget.

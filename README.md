@@ -1,5 +1,7 @@
 # HFT FIX Protocol Engine
 
+![CI](https://github.com/Bappaditya-kuilya/hft-fix-protocol-engine/actions/workflows/ci.yml/badge.svg)
+
 Minimal FIX 4.2 reference engine for Tag 35=D (New Order Single). Python 3.12.
 C++/Rust would be the real HFT choice; Python is acceptable here because this
 is a correctness reference, not a production trading path.
@@ -12,7 +14,7 @@ ruff check .
 mypy fix_engine/
 ```
 
-All three pass on Day-4 (71 tests).
+All three pass on Day-5 (72 tests + 4 benches).
 
 ## Structure
 
@@ -51,7 +53,17 @@ tests/test_*.py              # corpus, auth, validation, smoke
 - Hot path `engine.handle_new_order/handle_cancel`: seq gate → validation →
   35=8 report → queue push. Rejects push nothing.
 - 20ms p99 budget covers handler + audit-queue push only (PRD §8 steps 4-5).
-  No benchmark numbers yet — bench suite lands Day-6.
+  Measured via `make bench` (Python 3.12.11, linux, at `babd0a0`):
+
+  | path | median | p99 (gate) | budget |
+  |---|---|---|---|
+  | 35=D accept | ~30µs | — | 20ms |
+  | 35=F cancel | ~76µs | — | 20ms |
+  | reject (bad field) | ~36µs | — | 20ms |
+  | seq-reject | ~7µs | — | 20ms |
+  | gate (200 calls, perf_counter) | 13µs | 38µs | 20ms |
+
+  Excludes TCP/framing/parser, SQLite writer, socket. CI fails above budget.
 
 ## What's not yet (honest gaps)
 
@@ -73,6 +85,7 @@ only, no UI, not for real money.
 - Day-2: framing + parser + 35=8 encoder + wire round-trip. 6 commits.
 - Day-3: session + seq + cancel + handler wiring + e2e flow. 7 commits.
 - Day-4: audit queue + WAL writer + 35=8 builders + hot-path wiring. 8 commits.
+- Day-5: benchmark suite + CI gate + real numbers. 6 commits.
 - Day-3: _session + seq wiring (pending)_
 - Day-4: _35=F + 35=8 encoder (pending)_
 - Day-5: _audit queue + writer (pending)_
