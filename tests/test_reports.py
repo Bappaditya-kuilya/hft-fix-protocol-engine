@@ -1,7 +1,7 @@
 import pytest
 
 from fix_engine.parser import parse_frame
-from fix_engine.reports import build_new, build_rejected
+from fix_engine.reports import build_cancelled, build_new, build_rejected
 
 
 def test_new_roundtrip_verifies_length_checksum():
@@ -41,3 +41,17 @@ def test_rejected_missing_raises():
         build_rejected("", "x")
     with pytest.raises(ValueError, match="58|reason"):
         build_rejected("C1", " ")
+
+
+def test_cancelled_echoes_orig():
+    d = parse_frame(build_cancelled("C1", "C2"))
+    assert d["35"] == "8" and d["11"] == "C2"
+    assert d["41"] == "C1"
+    assert d["39"] == "4" and d["150"] == "4"
+
+
+def test_cancelled_missing_raises():
+    with pytest.raises(ValueError, match="OrigClOrdID|orig_cl_ord_id"):
+        build_cancelled(" ", "C2")
+    with pytest.raises(ValueError, match="ClOrdID|cl_ord_id"):
+        build_cancelled("C1", "")

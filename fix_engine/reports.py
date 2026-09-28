@@ -90,3 +90,20 @@ def build_rejected(cl_ord_id: str, reason: str) -> bytes:
             "58": reason,
         }
     )
+
+
+def build_cancelled(orig_cl_ord_id: str, cl_ord_id: str) -> bytes:
+    """Cancel ack 35=8, OrdStatus 39=4 / ExecType 150=4 with OrigClOrdID(41)."""
+    orig = _req("OrigClOrdID (orig_cl_ord_id)", orig_cl_ord_id)
+    cl = _req("ClOrdID (cl_ord_id)", cl_ord_id)
+    return encode_35_8(
+        {
+            "11": cl,
+            "41": orig,
+            "37": f"EX-{cl}",
+            "17": f"E-{cl}",
+            "20": "0",
+            "39": "4",
+            "150": "4",
+        }
+    )
