@@ -1,0 +1,30 @@
+name: CI
+
+"on": [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest pytest-benchmark ruff mypy
+      - run: pytest -q
+      - run: ruff check .
+      - run: mypy fix_engine/
+
+  bench:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest pytest-benchmark ruff mypy
+      - run: pytest benchmarks/ --benchmark-only -q
+      # No stored-baseline compare: explicit perf_counter gate is the mechanism.
+      # Absolute 20ms budget, no baseline drift to maintain.
+      - run: python3 -m pytest tests/test_bench_gate.py -q
