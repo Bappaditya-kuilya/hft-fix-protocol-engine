@@ -28,6 +28,7 @@ committed `.env.example`. Never commit live secrets.
 Writes are append-only, no delete/update path. Bounded queue
 (maxsize=10000): on full, drop + increment `dropped_counter`, log every drop,
 surface the counter in benchmark output. Silent drops fail review.
+Landed Day-4 (`audit.py` + `run_writer` thread, WAL batched).
 
 ## Known gaps
 
@@ -40,3 +41,4 @@ do not trade real money on this.
   still pending (see gaps above).
 - Day-2: framing + parser boundary landed, audited via round-trip tests.
 - Day-3: session wiring + seq gate landed, proven by e2e flow test.
+- Day-4: audit queue + hot-path wiring landed; rejects push nothing.
