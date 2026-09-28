@@ -1,8 +1,11 @@
 """Bounded audit queue — stdlib only, never blocks."""
 
 import asyncio
+import json
 import logging
+import sqlite3
 import threading
+from pathlib import Path
 
 MAXSIZE = 10000
 
@@ -42,3 +45,32 @@ def drain_batch(max_n: int = 500) -> list[dict]:
         except asyncio.QueueEmpty:
             break
     return out
+
+
+def write_batch(db_path: str | Path, events: list[dict]) -> int:
+    if not events:
+        return 0
+    con = sqlite3.connect(db_path)
+    try:
+        con.execute("PRAGMA journal_mode=WAL;")
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS audit"
+            " (id INTEGER PRIMARY KEY, payload TEXT)"
+        )
+        con.executemany(
+            "INSERT INTO audit (payload) VALUES (?)",
+            [(json.dumps(e),) for e in events],
+        )
+        con.commit()
+        return len(events)
+    finally:
+        con.close()
+
+
+def run_writer(db_path: str | Path, stop: threading.Event, poll_s: float = 0.05) -> None:
+    while not stop.is_set():
+        batch = drain_batch()
+        if batch:
+            write_batch(db_path, batch)
+        else:
+            stop.wait(poll_s)
