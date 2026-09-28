@@ -1,3 +1,4 @@
+import logging
 import time
 
 from fix_engine import audit
@@ -36,3 +37,23 @@ def test_drop_never_raises_and_stays_bounded() -> None:
     for _ in range(10):
         assert audit.try_push({"x": 1}) is False
     assert audit.dropped_counter() == 10
+
+
+def test_drop_emits_warning(caplog) -> None:  # type: ignore[no-untyped-def]
+    for i in range(audit.MAXSIZE):
+        audit.try_push({"i": i})
+    with caplog.at_level(logging.WARNING):
+        assert audit.try_push({"overflow": True}) is False
+    assert any("audit drop" in r.message for r in caplog.records)
+
+
+def test_stats_reflect_queued_dropped() -> None:
+    assert audit.get_stats() == {"queued": 0, "dropped": 0}
+    audit.try_push({"a": 1})
+    audit.try_push({"b": 2})
+    assert audit.get_stats() == {"queued": 2, "dropped": 0}
+    for i in range(audit.MAXSIZE - 2):
+        audit.try_push({"i": i})
+    assert audit.get_stats() == {"queued": audit.MAXSIZE, "dropped": 0}
+    audit.try_push({"overflow": True})
+    assert audit.get_stats() == {"queued": audit.MAXSIZE, "dropped": 1}
