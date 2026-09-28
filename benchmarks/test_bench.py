@@ -75,3 +75,53 @@ def test_bench_cancel(benchmark: Any, bench_sid: str) -> None:
     benchmark(_round)
     stats = audit.get_stats()
     print(f"bench_cancel dropped={stats['dropped']} queued={stats['queued']}")
+
+
+def _bad(seq: int, cl: str) -> dict:
+    d = _d(seq, cl)
+    del d["40"]
+    return d
+
+
+def test_bench_reject(benchmark: Any, bench_sid: str) -> None:
+    assert bench_sid == SID
+    while audit.drain_batch(1000):
+        pass
+    result, _report, _pushed = handle_new_order(
+        _bad(next(_seq), f"BENCH-R-{next(_ids)}"), SID
+    )
+    assert result["status"] == "REJECTED"
+    benchmark(
+        lambda: handle_new_order(
+            _bad(next(_seq), f"BENCH-R-{next(_ids)}"), SID
+        )
+    )
+    stats = audit.get_stats()
+    print(f"bench_reject dropped={stats['dropped']} queued={stats['queued']}")
+
+
+_GAP = {
+    "8": "FIX.4.2",
+    "35": "D",
+    "49": SID,
+    "34": "999999999",
+    "11": "BENCH-GAP",
+    "55": "AAPL",
+    "54": "1",
+    "38": "100",
+    "40": "2",
+}
+
+
+def test_bench_seq_reject(benchmark: Any, bench_sid: str) -> None:
+    assert bench_sid == SID
+    while audit.drain_batch(1000):
+        pass
+    before = audit.get_stats()["queued"] + audit.dropped_counter()
+    result, _report, pushed = handle_new_order(dict(_GAP), SID)
+    assert result["status"] == "REJECTED" and pushed is False
+    after = audit.get_stats()["queued"] + audit.dropped_counter()
+    assert after == before
+    benchmark(lambda: handle_new_order(dict(_GAP), SID))
+    stats = audit.get_stats()
+    print(f"bench_seq_reject dropped={stats['dropped']} queued={stats['queued']}")
