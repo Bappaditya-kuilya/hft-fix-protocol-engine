@@ -59,3 +59,10 @@ def test_garbage_before_8_resync():
     raw = CORPUS["5"]
     assert fb.feed(b"\x00\xffGARBAGE" + raw) == [raw]
     assert fb.pending_bytes() == 0
+
+
+def test_partial_header_without_soh_stays_bounded():
+    fb = FramingBuffer()
+    for _ in range(20):
+        fb.feed(b"8=FIX.4.2" + b"X" * 65536)
+    assert fb.pending_bytes() <= 1 << 20
