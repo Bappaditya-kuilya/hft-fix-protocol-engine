@@ -51,3 +51,16 @@ def test_cancel_flow():
     )
     assert result["status"] == "CANCELLED" and pushed is True
     assert parse_frame(report)["39"] == "4"
+
+
+def test_unhashable_clordid_rejects_without_raise():
+    session.logon("ENG-3", 1)
+    parsed = {**_d(2, "x"), "49": "ENG-3", "11": ["not", "hashable"]}
+    result, _report, _pushed = handle_new_order(parsed, "ENG-3")
+    assert result["reason"] == "ClOrdID: must be hashable"
+
+
+def test_gate_reject_without_clordid_still_reports():
+    result, report, pushed = handle_new_order({"35": "D", "34": "2"}, "GHOST")
+    assert result["reason"] == "unknown session" and pushed is False
+    assert parse_frame(report)["58"] == "unknown session" or parse_frame(report)["35"] == "8"

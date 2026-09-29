@@ -1,7 +1,11 @@
 """End-to-end session-gated flow: Logon -> D/F -> Logout (PRD section 7)."""
 
 from fix_engine import session
-from fix_engine.order_handler import process_cancel_request, process_new_order_single
+from fix_engine.order_handler import (
+    _accepted,
+    process_cancel_request,
+    process_new_order_single,
+)
 
 SID = "E2E-1"
 
@@ -50,7 +54,9 @@ def test_out_of_order_seq_rejected_before_handler():
 
 
 def test_unknown_session_order_rejected():
+    before = set(_accepted)
     assert process_new_order_single(ORDER, session_id="NOPE")["reason"] == "unknown session"
     assert process_cancel_request(
         {"ClOrdID": "X", "OrigClOrdID": "E2E-ORD-1"}, session_id="NOPE"
     )["reason"] == "unknown session"
+    assert set(_accepted) == before

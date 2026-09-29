@@ -19,16 +19,19 @@ def handle_new_order(parsed: dict, session_id: str) -> tuple[dict, bytes, bool]:
         {"SenderCompID": session_id, "MsgSeqNum": parsed.get("34"), "MsgType": "D"}
     )
     if not ok:
-        result: dict = {"status": "REJECTED", "reason": m}
-        return result, reports.build_rejected(parsed.get("11", ""), m), False
+        result = {"status": "REJECTED", "reason": m}
+        return result, reports.build_rejected(str(parsed.get("11") or "UNKNOWN"), m), False
     order = _map(parsed, "11", "55", "54", "38", "40")
     result = process_new_order_single(order, session_id=session_id)
     if result["status"] == "ACCEPTED":
         report = reports.build_new(
-            result["order_id"], result["symbol"], order["OrderQty"], order["ClOrdID"]
+            str(result["order_id"]),
+            str(result["symbol"]),
+            order["OrderQty"],
+            str(order["ClOrdID"]),
         )
     else:
-        report = reports.build_rejected(order.get("ClOrdID", ""), result["reason"])
+        report = reports.build_rejected(str(order.get("ClOrdID") or "UNKNOWN"), result["reason"])
     pushed = audit.try_push({"type": "D", "session": session_id, **result})
     return result, report, pushed
 
@@ -39,12 +42,12 @@ def handle_cancel(parsed: dict, session_id: str) -> tuple[dict, bytes, bool]:
     )
     if not ok:
         result = {"status": "REJECTED", "reason": m}
-        return result, reports.build_rejected(parsed.get("11", ""), m), False
+        return result, reports.build_rejected(str(parsed.get("11") or "UNKNOWN"), m), False
     req = {"ClOrdID": parsed.get("11"), "OrigClOrdID": parsed.get("41")}
     result = process_cancel_request(req, session_id=session_id)
     if result["status"] == "CANCELLED":
-        report = reports.build_cancelled(result["order_id"], req["ClOrdID"] or "")
+        report = reports.build_cancelled(str(result["order_id"]), str(req["ClOrdID"] or "UNKNOWN"))
     else:
-        report = reports.build_rejected(req.get("ClOrdID") or "", result["reason"])
+        report = reports.build_rejected(str(req.get("ClOrdID") or "UNKNOWN"), result["reason"])
     pushed = audit.try_push({"type": "F", "session": session_id, **result})
     return result, report, pushed

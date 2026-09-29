@@ -43,7 +43,10 @@ def process_new_order_single(tag35d_message: dict, session_id: str | None = None
     if ord_type is None or (isinstance(ord_type, str) and not ord_type.strip()):
         return {"status": "REJECTED", "reason": "OrdType: missing or empty"}
 
-    _accepted.add(cl_ord_id)
+    try:
+        _accepted.add(cl_ord_id)
+    except TypeError:
+        return {"status": "REJECTED", "reason": "ClOrdID: must be hashable"}
     return {"status": "ACCEPTED", "order_id": cl_ord_id, "symbol": symbol}
 
 
