@@ -37,9 +37,10 @@ do not trade real money on this.
 
 ## Daily log
 
-- Day-1: registry lock, field validation, corpus verify. Wiring + queue
-  still pending (see gaps above).
+- Day-1: registry lock, field validation, corpus verify.
 - Day-2: framing + parser boundary landed, audited via round-trip tests.
 - Day-3: session wiring + seq gate landed, proven by e2e flow test.
-- Day-4: audit queue + hot-path wiring landed; rejects push nothing.
+- Day-4: audit queue + hot-path wiring landed; validation rejects are
+  audited, only gate rejects skip the queue.
 - Day-5: CI runs tests + bench + lint on every push, fails over budget.
+- Day-6: 1:1 audit fixes (never-raises, exact push semantics), `.env.example` added.
