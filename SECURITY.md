@@ -44,3 +44,4 @@ do not trade real money on this.
   audited, only gate rejects skip the queue.
 - Day-5: CI runs tests + bench + lint on every push, fails over budget.
 - Day-6: 1:1 audit fixes (never-raises, exact push semantics), `.env.example` added.
+- Day-7: framing buffer capped at 1MB (flood drops, stays bounded).

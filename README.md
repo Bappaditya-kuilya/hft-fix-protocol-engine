@@ -14,7 +14,7 @@ ruff check .
 mypy fix_engine/
 ```
 
-All three pass on Day-6 (74 tests + 4 benches).
+All three pass on Day-7 (75 tests + 4 benches).
 
 ## Structure
 
@@ -87,7 +87,8 @@ only, no UI, not for real money.
 - Day-3: session + seq + cancel + handler wiring + e2e flow. 7 commits.
 - Day-4: audit queue + WAL writer + 35=8 builders + hot-path wiring. 8 commits.
 - Day-5: benchmark suite + CI gate + real numbers. 5 commits.
-- Day-6: 1:1 audit fixes + done-gate. Commits below.
+- Day-6: 1:1 audit fixes + done-gate. 2 commits.
+- Day-7: buffer flood cap (red→green) + numbers refresh. Commits below.
 
 ## Done-gate (5-set, Day-6)
 
@@ -99,3 +100,4 @@ only, no UI, not for real money.
 - Resume signal: pass after Day-6 fixes — no duplicates, no stale gaps,
   counts match `git log`.
 - Git hygiene: pass — small commits, no manufactured history, no force-pushes.
+  Final: 38 commits over 7 days (6/6/7/8/5/2/4), 75 green, CI success.
