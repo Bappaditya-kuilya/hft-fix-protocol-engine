@@ -56,7 +56,7 @@ tests/test_*.py              # 16 files: corpus, framing, parser, auth, session,
   35=8 report → queue push. Validation rejects are audited too; only
   seq/unknown-session gate rejects skip the queue.
 - 20ms p99 budget covers handler + audit-queue push only (PRD §8 steps 4-5).
-  Measured via `make bench` (Python 3.12.11, linux, at `babd0a0`):
+  Measured via `make bench` (Python 3.12.11, linux, at `332de12`):
 
   | path | median | p99 (gate) | budget |
   |---|---|---|---|
@@ -64,7 +64,7 @@ tests/test_*.py              # 16 files: corpus, framing, parser, auth, session,
   | 35=F cancel | ~76µs | — | 20ms |
   | reject (bad field) | ~36µs | — | 20ms |
   | seq-reject | ~7µs | — | 20ms |
-  | gate (200 calls, perf_counter) | 13µs | 38µs | 20ms |
+  | gate (200 calls, perf_counter) | 11µs | 38µs | 20ms |
 
   Excludes TCP/framing/parser, SQLite writer, socket. CI fails above budget.
 
