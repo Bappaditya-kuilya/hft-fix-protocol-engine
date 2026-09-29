@@ -1,9 +1,13 @@
 class FramingBuffer:
+    MAX_BUFFER = 1 << 20
+
     def __init__(self) -> None:
         self._buf = bytearray()
 
     def feed(self, data: bytes) -> list[bytes]:
         self._buf += data
+        if len(self._buf) > self.MAX_BUFFER:
+            self._buf.clear()
         out: list[bytes] = []
         while True:
             if len(self._buf) == 0:
